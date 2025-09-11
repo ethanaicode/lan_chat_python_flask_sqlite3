@@ -21,14 +21,34 @@
     .disclaimer {
       color: #888;
     }
+
+    /* 聊天行基础样式 */
     .sys {
       color: #888;
     }
     .msg {
       margin: 6px 0;
+      line-height: 1.5;
       white-space: pre-wrap;
       word-break: break-word;
     }
+    /* 时间：灰、等宽字体 */
+    .msg .time {
+      color: #9ca3af;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      margin-right: 4px;
+    }
+    /* 用户名：蓝色、加粗 */
+    .msg .user {
+      color: #2563eb;
+      font-weight: 600;
+      margin-right: 4px;
+    }
+    /* 正文：继承文本色即可 */
+    .msg .text {
+      color: #222222;
+    }
+
     form {
       display: flex;
       gap: 8px;
@@ -117,6 +137,9 @@
   </div>
 
   <script>
+    // 控制开关：可以在页面启动时由后端渲染出来，或者通过 URL 参数传入
+    const SAFE_MODE = true; // true = 安全模式；false = 自由模式
+
     const $ = (sel) => document.querySelector(sel);
     const log = $("#log");
     const userInput = $("#user");
@@ -131,17 +154,52 @@
       "user" + Math.floor(Math.random() * 1000);
     roomInput.value = localStorage.getItem("chat_room") || "general";
 
+    function renderMessageContent(el, raw) {
+      if (SAFE_MODE) {
+        // 严格安全，只显示纯文本
+        el.textContent = raw;
+      } else {
+        // 自由模式：允许 HTML
+        el.innerHTML = raw;
+      }
+    }
+
+    function addMessage(m) {
+      const row = document.createElement("div");
+      row.className = "msg";
+
+      const t = document.createElement("span");
+      t.className = "time";
+      t.textContent = `[${fmt(m.ts)}]`;
+
+      const u = document.createElement("span");
+      u.className = "user";
+      u.textContent = `${m.user}:`;
+
+      const c = document.createElement("span");
+      c.className = "text";
+      renderMessageContent(c, m.content);
+
+      row.append(t, u, c);
+      log.appendChild(row);
+      log.scrollTop = log.scrollHeight;
+    }
+
+    // 仍保留 addLine 用于系统提示行（cls = "sys"）
     function addLine(text, cls = "msg") {
       const div = document.createElement("div");
       div.className = cls;
-      div.textContent = text; // 用 textContent 防 XSS
+      div.innerHTML = text; // 允许 HTML
       log.appendChild(div);
       log.scrollTop = log.scrollHeight;
     }
 
     function fmt(ts) {
       const d = new Date(ts * 1000);
-      return d.toLocaleTimeString();
+      const pad = (n) => String(n).padStart(2, "0");
+      return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(
+        d.getSeconds()
+      )}`;
     }
 
     let sinceId = 0;
@@ -150,9 +208,9 @@
       const r = await fetch(`/api/recent?room=${room}&limit=100`);
       const data = await r.json();
       log.innerHTML = "";
-      data.forEach((m) => addLine(`[${fmt(m.ts)}] ${m.user}: ${m.content}`));
+      data.forEach((m) => addMessage(m));
       sinceId = data.length ? data[data.length - 1].id : 0;
-      addLine(`—— 进入房间 #${roomInput.value} ——`, "sys");
+      addLine(`———— 欢迎进入房间 #${roomInput.value} ————`, "sys");
     }
 
     async function poll() {
@@ -163,7 +221,7 @@
         );
         const data = await r.json();
         data.forEach((m) => {
-          addLine(`[${fmt(m.ts)}] ${m.user}: ${m.content}`);
+          addMessage(m);
           sinceId = m.id;
         });
       } catch (_) {}
