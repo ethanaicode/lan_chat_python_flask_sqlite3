@@ -14,8 +14,12 @@
       height: 60vh;
       border: 1px solid #ddd;
       padding: 8px;
+      margin-top: 8px;
       overflow-y: auto;
       background: #fafafa;
+    }
+    .disclaimer {
+      color: #888;
     }
     .sys {
       color: #888;
@@ -30,6 +34,9 @@
       gap: 8px;
       margin-top: 8px;
     }
+    input#room {
+      margin-right: 24px;
+    }
     input,
     button {
       padding: 8px;
@@ -40,7 +47,12 @@
   </style>
 
   <div>
-    <h1>内网聊天室（demo）</h1>
+    <h1>内网聊天室</h1>
+    <p>
+      <span class="disclaimer"
+        >第一次进入房间，请设置下用户名并点击保存，以方便识别身份</span
+      >
+    </p>
     <div>
       房间：
       <input id="room" value="general" />

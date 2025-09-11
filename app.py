@@ -2,7 +2,7 @@
 from flask import Flask, request, jsonify, send_from_directory, g
 import sqlite3, time, os
 
-DB_PATH = "chat.db"
+DB_PATH = "./data/chat.db"
 
 app = Flask(__name__, static_folder="static", static_url_path="")
 
