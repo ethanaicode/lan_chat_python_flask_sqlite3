@@ -80,4 +80,4 @@ def api_recent():
 if __name__ == "__main__":
     init_db()
     # 内网可见
-    app.run(host="0.0.0.0", port=9000, debug=False)
+    app.run(host="0.0.0.0", port=8902, debug=False)
