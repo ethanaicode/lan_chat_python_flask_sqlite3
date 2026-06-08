@@ -1,0 +1,248 @@
+:root {
+  color-scheme: light;
+  --bg: linear-gradient(135deg, #f4efe6 0%, #dbe7f3 100%);
+  --card: rgba(255, 252, 247, 0.92);
+  --border: rgba(45, 76, 99, 0.16);
+  --text: #1f2a33;
+  --muted: #5f6f7b;
+  --accent: #166534;
+  --accent-strong: #14532d;
+  --danger: #b42318;
+  --danger-soft: #fef3f2;
+  --success-soft: #ecfdf3;
+  --shadow: 0 18px 50px rgba(31, 42, 51, 0.12);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--text);
+  background: var(--bg);
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+
+.page {
+  width: min(960px, calc(100vw - 32px));
+  margin: 40px auto;
+  display: grid;
+  gap: 20px;
+}
+
+.hero,
+.chat-panel {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(10px);
+}
+
+.hero {
+  padding: 28px;
+}
+
+.hero p {
+  margin: 12px 0 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.topbar h1 {
+  margin: 0;
+  font-size: 30px;
+  letter-spacing: 0.01em;
+}
+
+.admin-actions {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+button {
+  border: none;
+  border-radius: 999px;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-strong) 100%);
+  cursor: pointer;
+  transition: transform 0.18s ease, opacity 0.18s ease;
+}
+
+button:hover {
+  transform: translateY(-1px);
+}
+
+button:disabled {
+  opacity: 0.65;
+  cursor: wait;
+  transform: none;
+}
+
+button.ghost {
+  background: rgba(22, 101, 52, 0.12);
+  color: var(--accent-strong);
+  border-radius: 12px;
+  padding: 8px 12px;
+}
+
+button.danger {
+  background: linear-gradient(135deg, #b42318 0%, #7a271a 100%);
+}
+
+.controls {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: auto minmax(130px, 1fr) auto minmax(130px, 1fr) auto;
+  align-items: center;
+  gap: 10px 12px;
+}
+
+.controls label {
+  color: var(--muted);
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.controls #save {
+  justify-self: start;
+}
+
+input[type="text"] {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 14px;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--text);
+}
+
+.chat-panel {
+  padding: 20px;
+  display: grid;
+  gap: 14px;
+}
+
+.panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.panel-head h3 {
+  margin: 0;
+}
+
+.disclaimer {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+#log {
+  height: 58vh;
+  border: 1px solid rgba(45, 76, 99, 0.1);
+  border-radius: 18px;
+  padding: 14px;
+  overflow-y: auto;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.msg,
+.sys {
+  margin: 6px 0;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.sys {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.msg .time {
+  color: #9ca3af;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  margin-right: 4px;
+}
+
+.msg .user {
+  color: #155e75;
+  font-weight: 700;
+  margin-right: 4px;
+}
+
+.msg .text {
+  color: var(--text);
+}
+
+#sendForm {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+}
+
+.hint {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+@media (max-width: 900px) {
+  .controls {
+    grid-template-columns: auto 1fr;
+  }
+
+  .controls #save {
+    grid-column: 2;
+  }
+}
+
+@media (max-width: 720px) {
+  .page {
+    width: calc(100vw - 20px);
+    margin: 20px auto;
+  }
+
+  .hero,
+  .chat-panel {
+    border-radius: 20px;
+    padding: 20px;
+  }
+
+  .topbar {
+    align-items: flex-start;
+  }
+
+  .topbar h1 {
+    font-size: 24px;
+  }
+
+  .admin-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  #log {
+    height: 50vh;
+  }
+
+  #sendForm {
+    grid-template-columns: 1fr;
+  }
+}

@@ -74,3 +74,10 @@ curl -X POST http://<server-ip>:8902/api/admin/purge \
 
 - 前端会请求 `GET /api/admin/status`。
 - `is_admin=true` 时显示管理按钮；否则隐藏。
+
+## 统一样式主题
+
+聊天室页面已改为独立样式文件：
+
+- 主题文件：`static/chat-theme.css`
+- 页面入口：`static/index.html`

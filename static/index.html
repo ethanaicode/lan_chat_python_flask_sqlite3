@@ -1,192 +1,58 @@
 <!DOCTYPE html>
-<html lang="zh">
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>内网极简聊天室</title>
-  <style>
-    body {
-      font: 16px/1.4 system-ui, sans-serif;
-      max-width: 760px;
-      margin: 24px auto;
-      padding: 0 12px;
-    }
-    .topbar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 4px;
-    }
-    .topbar h1 {
-      margin: 0;
-      font-size: 26px;
-    }
-    .admin-actions {
-      display: none;
-      align-items: center;
-      gap: 8px;
-      flex-shrink: 0;
-    }
-    .admin-actions button {
-      padding: 6px 10px;
-      font-size: 13px;
-      border: 1px solid #d1d5db;
-      border-radius: 8px;
-      background: #fff;
-      cursor: pointer;
-    }
-    .admin-actions button:hover {
-      background: #f3f4f6;
-    }
-    .admin-actions .danger {
-      border-color: #ef4444;
-      color: #b91c1c;
-    }
-    #log {
-      height: 60vh;
-      border: 1px solid #ddd;
-      padding: 8px;
-      margin-top: 8px;
-      overflow-y: auto;
-      background: #fafafa;
-    }
-    .disclaimer {
-      color: #888;
-    }
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>内网聊天室</title>
+    <link rel="stylesheet" href="/chat-theme.css" />
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero">
+        <div class="topbar">
+          <h1>内网聊天室</h1>
+          <div class="admin-actions" id="adminActions">
+            <button class="ghost" id="purgeRoomBtn" title="删除当前房间全部消息">
+              删当前房间
+            </button>
+            <button class="danger" id="purgeAllBtn" title="删除所有房间消息">
+              删全部
+            </button>
+          </div>
+        </div>
+        <p>
+          支持局域网快速沟通。首次进入请设置用户名，系统会记住你的最近房间与昵称。
+        </p>
+        <div class="controls">
+          <label for="room">房间：</label>
+          <input id="room" type="text" value="general" />
+          <label for="user">用户名：</label>
+          <input id="user" type="text" placeholder="你的名字" />
+          <button class="ghost" id="save" type="button">保存</button>
+        </div>
+      </section>
 
-    /* 聊天行基础样式 */
-    .sys {
-      color: #888;
-    }
-    .msg {
-      margin: 6px 0;
-      line-height: 1.5;
-      white-space: pre-wrap;
-      word-break: break-word;
-    }
-    /* 时间：灰、等宽字体 */
-    .msg .time {
-      color: #9ca3af;
-      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-      margin-right: 4px;
-    }
-    /* 用户名：蓝色、加粗 */
-    .msg .user {
-      color: #2563eb;
-      font-weight: 600;
-      margin-right: 4px;
-    }
-    /* 正文：继承文本色即可 */
-    .msg .text {
-      color: #222222;
-    }
+      <section class="chat-panel">
+        <div class="panel-head">
+          <h3>聊天消息</h3>
+          <span class="hint">自动轮询中（1.5 秒）</span>
+        </div>
 
-    form {
-      display: flex;
-      gap: 8px;
-      margin-top: 8px;
-    }
+        <div id="log" aria-live="polite"></div>
 
-    .controls {
-      display: flex;
-      flex-wrap: nowrap;
-      align-items: center;
-      gap: 8px 12px;
-    }
+        <form id="sendForm">
+          <input
+            id="content"
+            type="text"
+            placeholder="说点什么..."
+            autocomplete="off"
+          />
+          <button type="submit">发送</button>
+        </form>
+      </section>
+    </main>
 
-    input,
-    button {
-      padding: 8px;
-    }
-    input[type="text"] {
-      flex: 1;
-    }
-
-    /* 屏宽 ≤ 720px：改为两排 */
-    @media (max-width: 720px) {
-      .topbar {
-        align-items: flex-start;
-      }
-      .topbar h1 {
-        font-size: 22px;
-      }
-      .admin-actions {
-        flex-direction: column;
-        align-items: stretch;
-      }
-      .controls {
-        display: grid;
-        grid-template-columns: auto 1fr auto; /* 左：标签 | 中：输入 | 右：按钮 */
-        align-items: center;
-        gap: 8px 12px;
-      }
-
-      /* 第1排：房间 */
-      .controls label[for="room"] {
-        grid-column: 1;
-        grid-row: 1;
-        white-space: nowrap;
-      }
-      .controls #room {
-        grid-column: 2;
-        grid-row: 1;
-      }
-
-      /* 第2排：用户名 + 右侧的保存按钮 */
-      .controls label[for="user"] {
-        grid-column: 1;
-        grid-row: 2;
-        white-space: nowrap;
-      }
-      .controls #user {
-        grid-column: 2;
-        grid-row: 2;
-      }
-      .controls #save {
-        grid-column: 3;
-        grid-row: 2;
-        justify-self: start;
-      }
-    }
-  </style>
-
-  <div>
-    <div class="topbar">
-      <h1>内网聊天室</h1>
-      <div class="admin-actions" id="adminActions">
-        <button id="purgeRoomBtn" title="删除当前房间全部消息">删当前房间</button>
-        <button class="danger" id="purgeAllBtn" title="删除所有房间消息">
-          删全部
-        </button>
-      </div>
-    </div>
-    <p>
-      <span class="disclaimer"
-        >第一次进入房间，请设置下用户名并点击保存，以方便识别身份</span
-      >
-    </p>
-    <div class="controls">
-      <label for="room">房间：</label>
-      <input id="room" value="general" />
-      <label for="user">用户名：</label>
-      <input id="user" placeholder="你的名字" />
-      <button id="save">保存</button>
-    </div>
-
-    <div id="log" aria-live="polite"></div>
-
-    <form id="sendForm">
-      <input
-        id="content"
-        type="text"
-        placeholder="说点什么…"
-        autocomplete="off"
-      />
-      <button type="submit">发送</button>
-    </form>
-  </div>
-
-  <script>
+    <script>
     // 控制开关：可以在页面启动时由后端渲染出来，或者通过 URL 参数传入
     const SAFE_MODE = true; // true = 安全模式；false = 自由模式
 
@@ -201,11 +67,14 @@
     const purgeRoomBtn = $("#purgeRoomBtn");
     const purgeAllBtn = $("#purgeAllBtn");
 
-    // 记住用户名/房间
-    userInput.value =
+    let activeUser =
       localStorage.getItem("chat_user") ||
       "user" + Math.floor(Math.random() * 1000);
-    roomInput.value = localStorage.getItem("chat_room") || "general";
+    let activeRoom = localStorage.getItem("chat_room") || "general";
+
+    // 输入框允许先改，但只有点击“保存”才会成为当前生效值。
+    userInput.value = activeUser;
+    roomInput.value = activeRoom;
 
     function getAdminHeaders() {
       const token = localStorage.getItem("chat_admin_token") || "";
@@ -226,7 +95,7 @@
     }
 
     async function purgeMessages(target) {
-      const room = roomInput.value.trim() || "general";
+      const room = activeRoom || "general";
       const isAll = target === "ALL";
       const confirmText = isAll
         ? "确认删除全部房间的所有聊天记录？此操作不可恢复。"
@@ -302,17 +171,17 @@
 
     let sinceId = 0;
     async function loadRecent() {
-      const room = encodeURIComponent(roomInput.value.trim() || "general");
+      const room = encodeURIComponent(activeRoom || "general");
       const r = await fetch(`/api/recent?room=${room}&limit=100`);
       const data = await r.json();
       log.innerHTML = "";
       data.forEach((m) => addMessage(m));
       sinceId = data.length ? data[data.length - 1].id : 0;
-      addLine(`———— 欢迎进入房间 #${roomInput.value} ————`, "sys");
+      addLine(`———— 欢迎进入房间 #${activeRoom} ————`, "sys");
     }
 
     async function poll() {
-      const room = encodeURIComponent(roomInput.value.trim() || "general");
+      const room = encodeURIComponent(activeRoom || "general");
       try {
         const r = await fetch(
           `/api/messages?room=${room}&since_id=${sinceId}&limit=200`
@@ -327,8 +196,8 @@
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
-      const user = userInput.value.trim() || "anon";
-      const room = roomInput.value.trim() || "general";
+      const user = activeUser || "anon";
+      const room = activeRoom || "general";
       const content = contentInput.value.trim();
       if (!content) return;
       await fetch("/api/send", {
@@ -342,8 +211,10 @@
     });
 
     saveBtn.addEventListener("click", () => {
-      localStorage.setItem("chat_user", userInput.value.trim());
-      localStorage.setItem("chat_room", roomInput.value.trim());
+      activeUser = userInput.value.trim() || "anon";
+      activeRoom = roomInput.value.trim() || "general";
+      localStorage.setItem("chat_user", activeUser);
+      localStorage.setItem("chat_room", activeRoom);
       loadRecent();
     });
 
@@ -354,5 +225,6 @@
     Promise.all([loadRecent(), refreshAdminStatus()]).then(() =>
       setInterval(poll, 1500)
     );
-  </script>
+    </script>
+  </body>
 </html>
