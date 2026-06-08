@@ -67,6 +67,22 @@
     const purgeRoomBtn = $("#purgeRoomBtn");
     const purgeAllBtn = $("#purgeAllBtn");
 
+    const USER_COLOR_PALETTE = [
+      "#155e75", // cyan-800
+      "#1d4ed8", // blue-700
+      "#7c3aed", // violet-600
+      "#be185d", // pink-700
+      "#b45309", // amber-700
+      "#0f766e", // teal-700
+      "#166534", // green-800
+      "#9f1239", // rose-800
+      "#374151", // gray-700
+      "#4338ca", // indigo-700
+    ];
+
+    let userColorMap = {};
+    let nextUserColorIndex = 0;
+
     let activeUser =
       localStorage.getItem("chat_user") ||
       "user" + Math.floor(Math.random() * 1000);
@@ -75,6 +91,45 @@
     // 输入框允许先改，但只有点击“保存”才会成为当前生效值。
     userInput.value = activeUser;
     roomInput.value = activeRoom;
+
+    const GLOBAL_COLOR_STATE_KEY = "chat_user_color_state_global";
+
+    function loadColorState() {
+      try {
+        const raw = localStorage.getItem(GLOBAL_COLOR_STATE_KEY);
+        if (!raw) return { map: {}, next: 0 };
+        const parsed = JSON.parse(raw);
+        const map = parsed && typeof parsed.map === "object" ? parsed.map : {};
+        const next = Number.isInteger(parsed?.next) ? parsed.next : 0;
+        return { map, next: Math.max(0, next) };
+      } catch (_) {
+        return { map: {}, next: 0 };
+      }
+    }
+
+    function saveColorState() {
+      localStorage.setItem(
+        GLOBAL_COLOR_STATE_KEY,
+        JSON.stringify({ map: userColorMap, next: nextUserColorIndex })
+      );
+    }
+
+    function ensureColorState() {
+      const state = loadColorState();
+      userColorMap = state.map;
+      nextUserColorIndex = state.next;
+    }
+
+    function colorForUser(user) {
+      const name = (user || "anon").trim() || "anon";
+      if (!Object.prototype.hasOwnProperty.call(userColorMap, name)) {
+        const idx = nextUserColorIndex % USER_COLOR_PALETTE.length;
+        userColorMap[name] = idx;
+        nextUserColorIndex += 1;
+        saveColorState();
+      }
+      return USER_COLOR_PALETTE[userColorMap[name] % USER_COLOR_PALETTE.length];
+    }
 
     function getAdminHeaders() {
       const token = localStorage.getItem("chat_admin_token") || "";
@@ -142,6 +197,7 @@
       const u = document.createElement("span");
       u.className = "user";
       u.textContent = `${m.user}:`;
+      u.style.setProperty("--user-color", colorForUser(m.user));
 
       const c = document.createElement("span");
       c.className = "text";
@@ -171,6 +227,7 @@
 
     let sinceId = 0;
     async function loadRecent() {
+      ensureColorState();
       const room = encodeURIComponent(activeRoom || "general");
       const r = await fetch(`/api/recent?room=${room}&limit=100`);
       const data = await r.json();

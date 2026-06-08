@@ -182,7 +182,7 @@ input[type="text"] {
 }
 
 .msg .user {
-  color: #155e75;
+  color: var(--user-color, #155e75);
   font-weight: 700;
   margin-right: 4px;
 }
