@@ -10,6 +10,38 @@
       margin: 24px auto;
       padding: 0 12px;
     }
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 4px;
+    }
+    .topbar h1 {
+      margin: 0;
+      font-size: 26px;
+    }
+    .admin-actions {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .admin-actions button {
+      padding: 6px 10px;
+      font-size: 13px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      background: #fff;
+      cursor: pointer;
+    }
+    .admin-actions button:hover {
+      background: #f3f4f6;
+    }
+    .admin-actions .danger {
+      border-color: #ef4444;
+      color: #b91c1c;
+    }
     #log {
       height: 60vh;
       border: 1px solid #ddd;
@@ -72,6 +104,16 @@
 
     /* 屏宽 ≤ 720px：改为两排 */
     @media (max-width: 720px) {
+      .topbar {
+        align-items: flex-start;
+      }
+      .topbar h1 {
+        font-size: 22px;
+      }
+      .admin-actions {
+        flex-direction: column;
+        align-items: stretch;
+      }
       .controls {
         display: grid;
         grid-template-columns: auto 1fr auto; /* 左：标签 | 中：输入 | 右：按钮 */
@@ -109,7 +151,15 @@
   </style>
 
   <div>
-    <h1>内网聊天室</h1>
+    <div class="topbar">
+      <h1>内网聊天室</h1>
+      <div class="admin-actions" id="adminActions">
+        <button id="purgeRoomBtn" title="删除当前房间全部消息">删当前房间</button>
+        <button class="danger" id="purgeAllBtn" title="删除所有房间消息">
+          删全部
+        </button>
+      </div>
+    </div>
     <p>
       <span class="disclaimer"
         >第一次进入房间，请设置下用户名并点击保存，以方便识别身份</span
@@ -147,12 +197,60 @@
     const contentInput = $("#content");
     const saveBtn = $("#save");
     const form = $("#sendForm");
+    const adminActions = $("#adminActions");
+    const purgeRoomBtn = $("#purgeRoomBtn");
+    const purgeAllBtn = $("#purgeAllBtn");
 
     // 记住用户名/房间
     userInput.value =
       localStorage.getItem("chat_user") ||
       "user" + Math.floor(Math.random() * 1000);
     roomInput.value = localStorage.getItem("chat_room") || "general";
+
+    function getAdminHeaders() {
+      const token = localStorage.getItem("chat_admin_token") || "";
+      return token ? { "X-Admin-Token": token } : {};
+    }
+
+    async function refreshAdminStatus() {
+      try {
+        const r = await fetch("/api/admin/status", {
+          headers: getAdminHeaders(),
+        });
+        if (!r.ok) return;
+        const data = await r.json();
+        adminActions.style.display = data.is_admin ? "flex" : "none";
+      } catch (_) {
+        adminActions.style.display = "none";
+      }
+    }
+
+    async function purgeMessages(target) {
+      const room = roomInput.value.trim() || "general";
+      const isAll = target === "ALL";
+      const confirmText = isAll
+        ? "确认删除全部房间的所有聊天记录？此操作不可恢复。"
+        : `确认删除房间 #${room} 的所有聊天记录？此操作不可恢复。`;
+      if (!window.confirm(confirmText)) return;
+
+      const payload = isAll ? {} : { room };
+      const r = await fetch("/api/admin/purge", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...getAdminHeaders(),
+        },
+        body: JSON.stringify(payload),
+      });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok || !data.ok) {
+        alert("操作失败：你当前不是管理员，或权限校验未通过。");
+        await refreshAdminStatus();
+        return;
+      }
+      await loadRecent();
+      addLine(`管理员已删除 ${data.deleted || 0} 条消息（${data.room}）`, "sys");
+    }
 
     function renderMessageContent(el, raw) {
       if (SAFE_MODE) {
@@ -249,7 +347,12 @@
       loadRecent();
     });
 
+    purgeRoomBtn.addEventListener("click", () => purgeMessages("ROOM"));
+    purgeAllBtn.addEventListener("click", () => purgeMessages("ALL"));
+
     // 初始化
-    loadRecent().then(() => setInterval(poll, 1500));
+    Promise.all([loadRecent(), refreshAdminStatus()]).then(() =>
+      setInterval(poll, 1500)
+    );
   </script>
 </html>

@@ -18,3 +18,59 @@
 3. 在项目根目录下运行 `pip install -r requirements.txt` 安装依赖。
 
 ## 使用
+
+启动服务：
+
+```bash
+python app.py
+```
+
+默认监听 `0.0.0.0:8902`，局域网设备可访问。
+
+## 超级管理员能力（无账号系统）
+
+后端已内置超级管理员判断：
+
+- 来自服务器本机的请求（例如 `127.0.0.1`、`::1`、或本机网卡地址）会被视为超级管理员。
+- 也可配置共享令牌 `ADMIN_TOKEN`，用于远程管理员调用。
+
+设置令牌示例：
+
+```bash
+export ADMIN_TOKEN='your-strong-token'
+python app.py
+```
+
+### 管理接口：清空聊天记录
+
+`POST /api/admin/purge`
+
+- 清空全部消息：请求体 `{}`
+- 仅清空某个房间：请求体 `{"room":"general"}`
+
+调用示例：
+
+```bash
+curl -X POST http://127.0.0.1:8902/api/admin/purge \
+	-H 'Content-Type: application/json' \
+	-d '{}'
+```
+
+远程调用（带令牌）：
+
+```bash
+curl -X POST http://<server-ip>:8902/api/admin/purge \
+	-H 'Content-Type: application/json' \
+	-H 'X-Admin-Token: your-strong-token' \
+	-d '{}'
+```
+
+前端页面已增加管理员按钮（标题同一行，左标题右按钮）：
+
+- `删当前房间`：删除当前房间消息
+- `删全部`：删除所有房间消息
+
+按钮显示规则：
+
+- 前端会请求 `GET /api/admin/status`。
+- `is_admin=true` 时显示管理按钮；否则隐藏。

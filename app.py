@@ -1,10 +1,53 @@
 # app.py
 from flask import Flask, request, jsonify, send_from_directory, g
-import sqlite3, time, os
+import sqlite3, time, os, socket, ipaddress, hmac
 
 DB_PATH = "./data/chat.db"
+ADMIN_TOKEN = os.environ.get("ADMIN_TOKEN", "")
 
 app = Flask(__name__, static_folder="static", static_url_path="")
+
+
+def _get_server_ips():
+    ips = {"127.0.0.1", "::1"}
+    # Gather local interface addresses so requests from this machine to LAN IP
+    # can still be recognized as local admin traffic.
+    try:
+        host = socket.gethostname()
+        for item in socket.getaddrinfo(host, None):
+            ip = item[4][0]
+            ips.add(ip)
+    except OSError:
+        pass
+    return ips
+
+
+SERVER_IPS = _get_server_ips()
+
+
+def is_server_local_request(req):
+    remote = req.remote_addr or ""
+    if not remote:
+        return False
+    try:
+        ip = ipaddress.ip_address(remote)
+        if ip.is_loopback:
+            return True
+    except ValueError:
+        return False
+    return remote in SERVER_IPS
+
+
+def is_super_admin(req):
+    # Option A: request comes from this server itself.
+    if is_server_local_request(req):
+        return True
+    # Option B: remote admin caller provides shared secret token.
+    if ADMIN_TOKEN:
+        token = req.headers.get("X-Admin-Token", "")
+        if token and hmac.compare_digest(token, ADMIN_TOKEN):
+            return True
+    return False
 
 def get_db():
     if "db" not in g:
@@ -76,6 +119,27 @@ def api_recent():
     ).fetchall()
     data = [dict(r) for r in rows][::-1]  # 时间顺序返回
     return jsonify(data)
+
+
+@app.get("/api/admin/status")
+def api_admin_status():
+    return jsonify({"ok": True, "is_admin": is_super_admin(request)})
+
+
+@app.post("/api/admin/purge")
+def api_admin_purge():
+    if not is_super_admin(request):
+        return jsonify({"ok": False, "error": "forbidden"}), 403
+
+    data = request.get_json(force=True, silent=True) or {}
+    room = (data.get("room") or "").strip()[:32]
+    db = get_db()
+    if room:
+        cur = db.execute("DELETE FROM messages WHERE room=?", (room,))
+    else:
+        cur = db.execute("DELETE FROM messages")
+    db.commit()
+    return jsonify({"ok": True, "deleted": cur.rowcount, "room": room or "ALL"})
 
 if __name__ == "__main__":
     init_db()
