@@ -1,5 +1,5 @@
 # app.py
-from flask import Flask, request, jsonify, send_from_directory, g
+from flask import Flask, request, jsonify, render_template, g
 import sqlite3, time, os, socket, ipaddress, hmac
 
 DB_PATH = "./data/chat.db"
@@ -79,7 +79,7 @@ def init_db():
 
 @app.route("/")
 def index():
-    return send_from_directory("static", "index.html")
+    return render_template("index.html")
 
 @app.post("/api/send")
 def api_send():
