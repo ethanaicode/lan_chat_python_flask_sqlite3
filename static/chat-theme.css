@@ -106,19 +106,48 @@ button.danger {
 .controls {
   margin-top: 18px;
   display: grid;
-  grid-template-columns: auto minmax(130px, 1fr) auto minmax(130px, 1fr) auto;
-  align-items: center;
-  gap: 10px 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 36px;
 }
 
-.controls label {
+.control-group {
+  display: grid;
+  grid-template-columns: auto minmax(160px, 1fr) auto;
+  align-items: center;
+  gap: 8px 10px;
+  padding: 0;
+}
+
+.room-group {
+  grid-template-columns: auto minmax(160px, 1fr) auto auto;
+}
+
+.control-group label {
   color: var(--muted);
   font-size: 14px;
   white-space: nowrap;
 }
 
-.controls #save {
+.control-group #switchRoom,
+.control-group #saveUser {
   justify-self: start;
+}
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 36px;
+  padding: 0;
+  line-height: 1;
+}
+
+.icon-btn svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+  display: block;
 }
 
 input[type="text"] {
@@ -204,11 +233,8 @@ input[type="text"] {
 
 @media (max-width: 900px) {
   .controls {
-    grid-template-columns: auto 1fr;
-  }
-
-  .controls #save {
-    grid-column: 2;
+    grid-template-columns: 1fr;
+    gap: 24px;
   }
 }
 
@@ -226,6 +252,12 @@ input[type="text"] {
 
   .topbar {
     align-items: flex-start;
+  }
+
+  .control-group {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+    gap: 8px;
   }
 
   .admin-actions {

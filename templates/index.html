@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>内网聊天室</title>
-    <link rel="stylesheet" href="/chat-theme.css" />
+    <link rel="stylesheet" href="/static/chat-theme.css" />
   </head>
   <body>
     <main class="page">
@@ -24,11 +24,34 @@
           支持局域网快速沟通。首次进入请设置用户名，系统会记住你的最近房间与昵称。
         </p>
         <div class="controls">
-          <label for="room">房间：</label>
-          <input id="room" type="text" value="general" />
-          <label for="user">用户名：</label>
-          <input id="user" type="text" placeholder="你的名字" />
-          <button class="ghost" id="save" type="button">保存</button>
+          <div class="control-group room-group">
+            <label for="room">房间：</label>
+            <input id="room" type="text" value="general" />
+            <button class="ghost" id="switchRoom" type="button">切换房间</button>
+            <button
+              class="ghost icon-btn"
+              id="goGeneral"
+              type="button"
+              title="回主房间"
+              aria-label="回主房间"
+            >
+              <svg
+                viewBox="0 0 1024 1024"
+                xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
+                focusable="false"
+              >
+                <path
+                  d="M991.36 411.52l-448-384a48.448 48.448 0 0 0-62.72 0l-448 384c-19.84 17.28-22.4 47.36-5.12 67.84C40.96 494.72 62.08 499.84 80 492.8V864c0 79.36 64.64 144 144 144h576c79.36 0 144-64.64 144-144V493.44a48.768 48.768 0 0 0 52.48-14.08c17.28-19.84 14.72-50.56-5.12-67.84zM560 912h-96V672c0-26.24 21.76-48 48-48s48 21.76 48 48v240z m240 0H656V672c0-79.36-64.64-144-144-144s-144 64.64-144 144v240H224c-26.24 0-48-21.76-48-48V415.36l336-288 336 288V864c0 26.24-21.76 48-48 48z"
+                ></path>
+              </svg>
+            </button>
+          </div>
+          <div class="control-group">
+            <label for="user">用户名：</label>
+            <input id="user" type="text" placeholder="你的名字" />
+            <button class="ghost" id="saveUser" type="button">保存</button>
+          </div>
         </div>
       </section>
 
@@ -61,11 +84,14 @@
     const userInput = $("#user");
     const roomInput = $("#room");
     const contentInput = $("#content");
-    const saveBtn = $("#save");
+    const switchRoomBtn = $("#switchRoom");
+    const goGeneralBtn = $("#goGeneral");
+    const saveUserBtn = $("#saveUser");
     const form = $("#sendForm");
     const adminActions = $("#adminActions");
     const purgeRoomBtn = $("#purgeRoomBtn");
     const purgeAllBtn = $("#purgeAllBtn");
+    const INITIAL_ROOM = {{ initial_room|tojson }};
 
     const USER_COLOR_PALETTE = [
       "#155e75", // cyan-800
@@ -86,11 +112,23 @@
     let activeUser =
       localStorage.getItem("chat_user") ||
       "user" + Math.floor(Math.random() * 1000);
-    let activeRoom = localStorage.getItem("chat_room") || "general";
+    let activeRoom = INITIAL_ROOM || "general";
 
     // 输入框允许先改，但只有点击“保存”才会成为当前生效值。
     userInput.value = activeUser;
     roomInput.value = activeRoom;
+
+    function updateRoomUrl(room) {
+      if (!room || room === "general") {
+        window.history.replaceState({}, "", "/");
+        return;
+      }
+      window.history.replaceState(
+        {},
+        "",
+        "/" + encodeURIComponent(room)
+      );
+    }
 
     const GLOBAL_COLOR_STATE_KEY = "chat_user_color_state_global";
 
@@ -129,6 +167,23 @@
         saveColorState();
       }
       return USER_COLOR_PALETTE[userColorMap[name] % USER_COLOR_PALETTE.length];
+    }
+
+    function applyRoomSwitch() {
+      activeRoom = roomInput.value.trim() || "general";
+      updateRoomUrl(activeRoom);
+      loadRecent();
+    }
+
+    function goGeneralRoom() {
+      roomInput.value = "general";
+      applyRoomSwitch();
+    }
+
+    function applyUserSave() {
+      activeUser = userInput.value.trim() || "anon";
+      localStorage.setItem("chat_user", activeUser);
+      addLine(`已保存用户名：${activeUser}`, "sys");
     }
 
     function getAdminHeaders() {
@@ -267,18 +322,15 @@
       poll();
     });
 
-    saveBtn.addEventListener("click", () => {
-      activeUser = userInput.value.trim() || "anon";
-      activeRoom = roomInput.value.trim() || "general";
-      localStorage.setItem("chat_user", activeUser);
-      localStorage.setItem("chat_room", activeRoom);
-      loadRecent();
-    });
+    switchRoomBtn.addEventListener("click", applyRoomSwitch);
+    goGeneralBtn.addEventListener("click", goGeneralRoom);
+    saveUserBtn.addEventListener("click", applyUserSave);
 
     purgeRoomBtn.addEventListener("click", () => purgeMessages("ROOM"));
     purgeAllBtn.addEventListener("click", () => purgeMessages("ALL"));
 
     // 初始化
+    updateRoomUrl(activeRoom);
     Promise.all([loadRecent(), refreshAdminStatus()]).then(() =>
       setInterval(poll, 1500)
     );

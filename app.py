@@ -5,7 +5,12 @@ import sqlite3, time, os, socket, ipaddress, hmac
 DB_PATH = "./data/chat.db"
 ADMIN_TOKEN = os.environ.get("ADMIN_TOKEN", "")
 
-app = Flask(__name__, static_folder="static", static_url_path="")
+app = Flask(__name__, static_folder="static", static_url_path="/static")
+
+
+def normalize_room(raw):
+    room = (raw or "").strip()[:32]
+    return room or "general"
 
 
 def _get_server_ips():
@@ -77,9 +82,15 @@ def init_db():
         conn.execute("PRAGMA synchronous=NORMAL;")
         conn.commit()
 
-@app.route("/")
+@app.get("/")
 def index():
-    return render_template("index.html")
+    room = normalize_room(request.args.get("room"))
+    return render_template("index.html", initial_room=room)
+
+
+@app.get("/<room>")
+def index_room(room):
+    return render_template("index.html", initial_room=normalize_room(room))
 
 @app.post("/api/send")
 def api_send():
