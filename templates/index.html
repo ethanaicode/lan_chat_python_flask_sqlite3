@@ -64,13 +64,32 @@
         <div id="log" aria-live="polite"></div>
 
         <form id="sendForm">
-          <input
-            id="content"
-            type="text"
-            placeholder="说点什么..."
-            autocomplete="off"
-          />
-          <button type="submit">发送</button>
+          <div class="composer">
+            <div class="composer-main">
+              <textarea
+                id="content"
+                rows="3"
+                placeholder="说点什么...（Enter 发送，Shift+Enter 换行）"
+                autocomplete="off"
+              ></textarea>
+            </div>
+            <div class="composer-actions">
+              <div class="composer-extra">
+                <button
+                  class="ghost icon-btn emoji-toggle"
+                  id="emojiToggle"
+                  type="button"
+                  title="插入表情"
+                  aria-label="插入表情"
+                  aria-expanded="false"
+                >
+                  😊
+                </button>
+                <div class="emoji-panel" id="emojiPanel" hidden></div>
+              </div>
+              <button type="submit">发送</button>
+            </div>
+          </div>
         </form>
       </section>
     </main>
@@ -88,10 +107,18 @@
     const goGeneralBtn = $("#goGeneral");
     const saveUserBtn = $("#saveUser");
     const form = $("#sendForm");
+    const emojiToggleBtn = $("#emojiToggle");
+    const emojiPanel = $("#emojiPanel");
     const adminActions = $("#adminActions");
     const purgeRoomBtn = $("#purgeRoomBtn");
     const purgeAllBtn = $("#purgeAllBtn");
     const INITIAL_ROOM = {{ initial_room|tojson }};
+
+    const EMOJI_LIST = [
+      "😀", "😁", "😂", "🤣", "😊", "😍", "😘", "🥳",
+      "😎", "🤔", "😅", "😭", "😡", "👍", "👏", "🙏",
+      "💪", "🎉", "🔥", "✨", "❤️", "💯", "✅", "👀"
+    ];
 
     const USER_COLOR_PALETTE = [
       "#155e75", // cyan-800
@@ -280,6 +307,34 @@
       )}`;
     }
 
+    function renderEmojiPanel() {
+      EMOJI_LIST.forEach((emoji) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "emoji-item";
+        btn.textContent = emoji;
+        btn.setAttribute("aria-label", `插入表情 ${emoji}`);
+        emojiPanel.appendChild(btn);
+      });
+    }
+
+    function setEmojiPanelOpen(isOpen) {
+      emojiPanel.hidden = !isOpen;
+      emojiToggleBtn.setAttribute("aria-expanded", isOpen ? "true" : "false");
+    }
+
+    function insertAtCursor(text) {
+      const start = contentInput.selectionStart ?? contentInput.value.length;
+      const end = contentInput.selectionEnd ?? contentInput.value.length;
+      const before = contentInput.value.slice(0, start);
+      const after = contentInput.value.slice(end);
+      contentInput.value = before + text + after;
+      const nextPos = start + text.length;
+      contentInput.selectionStart = nextPos;
+      contentInput.selectionEnd = nextPos;
+      contentInput.focus();
+    }
+
     let sinceId = 0;
     async function loadRecent() {
       ensureColorState();
@@ -322,6 +377,41 @@
       poll();
     });
 
+    contentInput.addEventListener("keydown", (e) => {
+      // Enter 发送，Shift+Enter 换行
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        form.requestSubmit();
+      }
+    });
+
+    emojiToggleBtn.addEventListener("click", () => {
+      const nextOpen = emojiPanel.hidden;
+      setEmojiPanelOpen(nextOpen);
+      if (nextOpen) {
+        contentInput.focus();
+      }
+    });
+
+    emojiPanel.addEventListener("click", (e) => {
+      const btn = e.target.closest(".emoji-item");
+      if (!btn) return;
+      insertAtCursor(btn.textContent || "");
+      setEmojiPanelOpen(false);
+    });
+
+    document.addEventListener("click", (e) => {
+      if (emojiPanel.hidden) return;
+      if (e.target.closest(".composer-extra")) return;
+      setEmojiPanelOpen(false);
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && !emojiPanel.hidden) {
+        setEmojiPanelOpen(false);
+      }
+    });
+
     switchRoomBtn.addEventListener("click", applyRoomSwitch);
     goGeneralBtn.addEventListener("click", goGeneralRoom);
     saveUserBtn.addEventListener("click", applyUserSave);
@@ -330,6 +420,8 @@
     purgeAllBtn.addEventListener("click", () => purgeMessages("ALL"));
 
     // 初始化
+    renderEmojiPanel();
+    setEmojiPanelOpen(false);
     updateRoomUrl(activeRoom);
     Promise.all([loadRecent(), refreshAdminStatus()]).then(() =>
       setInterval(poll, 1500)

@@ -160,6 +160,18 @@ input[type="text"] {
   color: var(--text);
 }
 
+textarea {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 14px;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--text);
+  font-family: inherit;
+  resize: vertical;
+}
+
 .chat-panel {
   padding: 20px;
   display: grid;
@@ -193,7 +205,7 @@ input[type="text"] {
 
 .msg,
 .sys {
-  margin: 6px 0;
+  margin: 12px 0;
   line-height: 1.6;
   white-space: pre-wrap;
   word-break: break-word;
@@ -221,9 +233,98 @@ input[type="text"] {
 }
 
 #sendForm {
-  display: grid;
-  grid-template-columns: 1fr auto;
+  display: block;
+}
+
+.composer {
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 8px 20px rgba(31, 42, 51, 0.08);
+  overflow: visible;
+}
+
+.composer-main {
+  min-height: 96px;
+  display: flex;
+  align-items: center;
+  padding: 10px 14px;
+}
+
+.composer-main textarea {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  width: 100%;
+  color: var(--text);
+  resize: none;
+  min-height: 72px;
+  line-height: 1.5;
+  padding: 0;
+}
+
+.composer-main textarea:focus {
+  outline: none;
+}
+
+.composer-actions {
+  border-top: 1px solid rgba(45, 76, 99, 0.16);
+  padding: 10px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   gap: 10px;
+}
+
+.composer-extra {
+  position: relative;
+  min-height: 36px;
+  flex: 1;
+}
+
+.emoji-toggle {
+  min-width: 44px;
+  height: 36px;
+  padding: 0;
+  font-size: 18px;
+}
+
+.emoji-panel {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 8px);
+  width: min(320px, calc(100vw - 72px));
+  max-height: 220px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 14px 28px rgba(31, 42, 51, 0.14);
+  padding: 10px;
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 6px;
+  z-index: 30;
+}
+
+.emoji-panel[hidden] {
+  display: none;
+}
+
+.emoji-item {
+  width: 100%;
+  min-height: 32px;
+  border: 1px solid rgba(22, 101, 52, 0.12);
+  border-radius: 10px;
+  background: rgba(22, 101, 52, 0.06);
+  color: #1f2a33;
+  font-size: 18px;
+  line-height: 1;
+  padding: 4px;
+}
+
+.emoji-item:hover {
+  background: rgba(22, 101, 52, 0.14);
 }
 
 .hint {
@@ -270,6 +371,19 @@ input[type="text"] {
   }
 
   #sendForm {
-    grid-template-columns: 1fr;
+    width: 100%;
+  }
+
+  .composer-main {
+    min-height: 86px;
+  }
+
+  .composer-actions {
+    padding: 10px;
+  }
+
+  .emoji-panel {
+    width: min(300px, calc(100vw - 52px));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
   }
 }
